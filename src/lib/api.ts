@@ -98,7 +98,11 @@ const contentCache = new Map<string, Promise<unknown>>();
 async function cachedJson<T>(url: string): Promise<T> {
   const hit = contentCache.get(url);
   if (hit) return hit as Promise<T>;
-  const p = fetch(url, { cache: "force-cache" })
+  // `cache: "default"` (not "force-cache") respects the backend's
+  // `Cache-Control: max-age=300`, so successful content still caches for 5 min,
+  // but the browser never serves a *stale error* the way force-cache does
+  // (which could pin a "backend down" failure long after the backend recovers).
+  const p = fetch(url, { cache: "default" })
     .then((res) => asJson<T>(res))
     .catch((err) => {
       contentCache.delete(url); // never cache a failure

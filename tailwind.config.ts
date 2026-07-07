@@ -15,7 +15,19 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        hanzi: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', "sans-serif"],
+        sans: [
+          "var(--font-sans)",
+          "system-ui",
+          "-apple-system",
+          '"Segoe UI"',
+          "sans-serif",
+        ],
+        hanzi: [
+          '"Noto Sans SC"',
+          '"PingFang SC"',
+          '"Microsoft YaHei"',
+          "sans-serif",
+        ],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -56,6 +68,15 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 10px)",
+      },
+      boxShadow: {
+        soft: "0 1px 2px 0 rgb(20 14 8 / 0.04), 0 1px 3px 0 rgb(20 14 8 / 0.06)",
+        card: "0 1px 3px 0 rgb(20 14 8 / 0.05), 0 6px 16px -4px rgb(20 14 8 / 0.08)",
+        elevated:
+          "0 4px 8px -2px rgb(20 14 8 / 0.06), 0 14px 28px -8px rgb(20 14 8 / 0.12)",
+        pop: "0 10px 20px -6px rgb(20 14 8 / 0.10), 0 24px 48px -12px rgb(20 14 8 / 0.16)",
       },
       keyframes: {
         "accordion-down": {

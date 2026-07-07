@@ -2,13 +2,26 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, LogIn, UserPlus, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Loader2,
+  LogIn,
+  UserPlus,
+  AlertCircle,
+  Cloud,
+  Layers,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+
+const PERKS = [
+  { icon: Cloud, text: "Lưu tiến trình theo tài khoản, đồng bộ mọi thiết bị" },
+  { icon: Layers, text: "Flashcard & ôn tập lặp lại ngắt quãng (SM-2)" },
+  { icon: CheckCircle2, text: "Chấm bài tức thì + giải thích bằng tiếng Việt" },
+];
 
 export function AuthCard() {
   const router = useRouter();
@@ -41,20 +54,47 @@ export function AuthCard() {
   };
 
   return (
-    <Card className="mx-auto w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-xl">Tài khoản HSK Master</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Đăng nhập để lưu tiến trình học của bạn theo tài khoản.
+    <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-2xl border shadow-elevated md:grid-cols-2">
+      {/* Branded panel */}
+      <div className="relative hidden flex-col justify-between bg-gradient-to-br from-primary via-rose-700 to-slate-900 p-8 text-white md:flex">
+        <div>
+          <span className="hanzi text-7xl font-semibold leading-none opacity-90">
+            学
+          </span>
+          <h2 className="mt-4 text-2xl font-bold">HSK Master</h2>
+          <p className="mt-1 text-sm text-white/80">
+            Học tiếng Trung · Luyện thi HSK cho người Việt
+          </p>
+        </div>
+        <ul className="mt-8 space-y-3">
+          {PERKS.map((p) => {
+            const Icon = p.icon;
+            return (
+              <li key={p.text} className="flex items-start gap-3 text-sm">
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                  <Icon className="size-4" />
+                </span>
+                <span className="text-white/90">{p.text}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Form */}
+      <div className="bg-card p-6 sm:p-8">
+        <h1 className="text-xl font-bold">Tài khoản HSK Master</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Đăng nhập để lưu tiến trình học của bạn.
         </p>
-      </CardHeader>
-      <CardContent>
+
         <Tabs
           value={mode}
           onValueChange={(v) => {
             setMode(v as "login" | "register");
             setError("");
           }}
+          className="mt-5"
         >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Đăng nhập</TabsTrigger>
@@ -64,7 +104,9 @@ export function AuthCard() {
           <form onSubmit={submit} className="mt-4 space-y-3">
             {mode === "register" ? (
               <div>
-                <label className="mb-1 block text-sm font-medium">Tên hiển thị</label>
+                <label className="mb-1 block text-sm font-medium">
+                  Tên hiển thị
+                </label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -106,7 +148,12 @@ export function AuthCard() {
               </div>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={submitting}
+            >
               {submitting ? (
                 <Loader2 className="animate-spin" />
               ) : mode === "login" ? (
@@ -134,7 +181,7 @@ export function AuthCard() {
             </p>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

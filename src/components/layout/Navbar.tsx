@@ -24,17 +24,18 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 type Tone = "blue" | "violet" | "red" | "green" | "amber" | "cyan" | "pink" | "orange";
 const TONE: Record<Tone, string> = {
-  blue: "bg-blue-100 text-blue-600",
-  violet: "bg-violet-100 text-violet-600",
-  red: "bg-rose-100 text-rose-600",
-  green: "bg-emerald-100 text-emerald-600",
-  amber: "bg-amber-100 text-amber-600",
-  cyan: "bg-cyan-100 text-cyan-600",
-  pink: "bg-pink-100 text-pink-600",
-  orange: "bg-orange-100 text-orange-600",
+  blue: "bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+  violet: "bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
+  red: "bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
+  green: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+  amber: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300",
+  cyan: "bg-cyan-100 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-300",
+  pink: "bg-pink-100 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300",
+  orange: "bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300",
 };
 
 interface Item {
@@ -147,7 +148,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70">
       {/* Row 1: brand + account */}
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <GraduationCap className="size-5" />
@@ -160,36 +161,39 @@ export function Navbar() {
           </div>
         </Link>
 
-        <Link
-          href="/tai-khoan"
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            pathname.startsWith("/tai-khoan")
-              ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-          )}
-        >
-          {user ? (
-            <>
-              <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                {(user.name || user.email)[0]?.toUpperCase()}
-              </span>
-              <span className="hidden max-w-[9rem] truncate sm:inline">
-                {user.name || user.email}
-              </span>
-            </>
-          ) : (
-            <>
-              <LogIn className="size-4" />
-              <span className="hidden sm:inline">Đăng nhập</span>
-            </>
-          )}
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+          <Link
+            href="/tai-khoan"
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              pathname.startsWith("/tai-khoan")
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            {user ? (
+              <>
+                <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {(user.name || user.email)[0]?.toUpperCase()}
+                </span>
+                <span className="hidden max-w-[9rem] truncate sm:inline">
+                  {user.name || user.email}
+                </span>
+              </>
+            ) : (
+              <>
+                <LogIn className="size-4" />
+                <span className="hidden sm:inline">Đăng nhập</span>
+              </>
+            )}
+          </Link>
+        </div>
       </div>
 
       {/* Row 2: mega-menu nav (flex-wrap so dropdowns aren't clipped) */}
       <div className="border-t">
-        <nav className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-0.5 px-2 py-1 sm:px-4">
+        <nav className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-0.5 px-2 py-1 sm:px-4">
           {TOP_LINKS.map((l) => (
             <Link key={l.label} href={l.href} className={linkCls(l.href)}>
               {l.label}

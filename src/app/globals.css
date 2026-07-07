@@ -4,48 +4,49 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Warm "ink & paper" palette — ivory neutrals, vermilion red, gold accent */
+    --background: 40 30% 98%;
+    --foreground: 20 14% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 0 72% 51%;
+    --card-foreground: 20 14% 14%;
+    --primary: 2 78% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 38 92% 50%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 51%;
+    --secondary: 40 22% 95%;
+    --secondary-foreground: 20 14% 20%;
+    --muted: 40 22% 95%;
+    --muted-foreground: 25 8% 45%;
+    --accent: 40 95% 52%;
+    --accent-foreground: 24 30% 16%;
+    --destructive: 14 84% 52%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --success: 152 58% 40%;
     --success-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 0 72% 51%;
-    --radius: 0.75rem;
+    --border: 36 22% 89%;
+    --input: 36 22% 89%;
+    --ring: 2 78% 50%;
+    --radius: 0.85rem;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --primary: 0 72% 55%;
+    --background: 20 16% 8%;
+    --foreground: 40 20% 96%;
+    --card: 20 15% 12%;
+    --card-foreground: 40 20% 96%;
+    --primary: 2 82% 58%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 18%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 38 92% 50%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 62% 45%;
+    --secondary: 20 12% 18%;
+    --secondary-foreground: 40 20% 96%;
+    --muted: 20 12% 18%;
+    --muted-foreground: 30 10% 62%;
+    --accent: 40 92% 55%;
+    --accent-foreground: 24 40% 12%;
+    --destructive: 14 78% 53%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --success: 152 55% 46%;
     --success-foreground: 0 0% 100%;
-    --border: 217 33% 20%;
-    --input: 217 33% 22%;
-    --ring: 0 72% 55%;
+    --border: 20 12% 22%;
+    --input: 20 12% 24%;
+    --ring: 2 82% 58%;
   }
 }
 
@@ -54,7 +55,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

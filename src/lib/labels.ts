@@ -175,6 +175,16 @@ export const SOURCE_PATH: Record<string, string> = {
   THEME: "/vocab-topic",
 };
 
+/** Per-level accent (border + soft bg + text) for level pills. Dark-aware. */
+export const LEVEL_ACCENT: Record<HSKLevel, string> = {
+  HSK1: "border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/10 dark:text-emerald-300",
+  HSK2: "border-sky-400 bg-sky-50 text-sky-700 dark:border-sky-500/50 dark:bg-sky-500/10 dark:text-sky-300",
+  HSK3: "border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-500/50 dark:bg-pink-500/10 dark:text-pink-300",
+  HSK4: "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-500/50 dark:bg-amber-500/10 dark:text-amber-300",
+  HSK5: "border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500/50 dark:bg-violet-500/10 dark:text-violet-300",
+  HSK6: "border-rose-400 bg-rose-50 text-rose-700 dark:border-rose-500/50 dark:bg-rose-500/10 dark:text-rose-300",
+};
+
 /** Colored tone cycled across level/lesson cards. */
 export const CARD_TONES = [
   "from-rose-500 to-red-500",

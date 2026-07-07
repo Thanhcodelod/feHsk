@@ -181,31 +181,74 @@ export function VocabLesson({
               const showTrad = w.traditional && w.traditional !== w.hanzi;
               return (
                 <Card key={w.id}>
-                  <CardContent className="flex gap-4 p-4">
+                  <CardContent className="flex gap-4 p-4 sm:p-5">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
                       {(lesson - 1) * 15 + i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="hanzi text-3xl font-semibold">{w.hanzi}</span>
-                        {showTrad ? (
-                          <span className="hanzi text-lg text-muted-foreground">
-                            繁 {w.traditional}
-                          </span>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => void speak(w.hanzi, { rate: 0.8 })}
-                          className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-primary"
-                          aria-label={`Nghe ${w.hanzi}`}
-                        >
-                          <Volume2 className="size-4" />
-                        </button>
+                      {/* Hanzi + pinyin + POS */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="hanzi text-3xl font-semibold">
+                              {w.hanzi}
+                            </span>
+                            {showTrad ? (
+                              <span className="hanzi text-lg text-muted-foreground">
+                                繁 {w.traditional}
+                              </span>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => void speak(w.hanzi, { rate: 0.8 })}
+                              className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-primary"
+                              aria-label={`Nghe ${w.hanzi}`}
+                            >
+                              <Volume2 className="size-4" />
+                            </button>
+                          </div>
+                          <p className="mt-0.5 text-primary">{w.pinyin}</p>
+                        </div>
+                        {w.pos ? <PosBadge pos={w.pos} /> : null}
                       </div>
-                      <p className="mt-0.5 text-primary">{w.pinyin}</p>
-                      <p className="mt-1 text-muted-foreground">{w.vi}</p>
+
+                      {/* Meaning */}
+                      <p className="mt-2 leading-relaxed">{w.vi}</p>
+
+                      {/* Examples */}
+                      {w.examples && w.examples.length > 0 ? (
+                        <div className="mt-3 space-y-2 border-t pt-3">
+                          {w.examples.map((ex, k) => (
+                            <div
+                              key={k}
+                              className="flex items-start gap-2 rounded-lg bg-secondary/40 p-3"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => void speak(ex.zh, { rate: 0.85 })}
+                                className="mt-0.5 shrink-0 rounded-full p-1 text-muted-foreground hover:bg-secondary hover:text-primary"
+                                aria-label="Nghe câu ví dụ"
+                              >
+                                <Volume2 className="size-3.5" />
+                              </button>
+                              <div className="min-w-0">
+                                <p className="text-xs text-primary/70">
+                                  {ex.pinyin}
+                                </p>
+                                <p className="hanzi text-base leading-snug">
+                                  {ex.zh}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {ex.vi}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
                       {w.topic ? (
-                        <Badge variant="outline" className="mt-2 text-[10px]">
+                        <Badge variant="outline" className="mt-3 text-[10px]">
                           {w.topic}
                         </Badge>
                       ) : null}
@@ -228,5 +271,36 @@ export function VocabLesson({
         />
       </div>
     </div>
+  );
+}
+
+const POS_COLOR: [string, string][] = [
+  ["danh từ", "bg-sky-100 text-sky-700"],
+  ["động từ", "bg-rose-100 text-rose-700"],
+  ["tính từ", "bg-emerald-100 text-emerald-700"],
+  ["phó từ", "bg-amber-100 text-amber-700"],
+  ["đại từ", "bg-violet-100 text-violet-700"],
+  ["số từ", "bg-cyan-100 text-cyan-700"],
+  ["lượng từ", "bg-teal-100 text-teal-700"],
+  ["giới từ", "bg-indigo-100 text-indigo-700"],
+  ["liên từ", "bg-fuchsia-100 text-fuchsia-700"],
+  ["trợ từ", "bg-slate-200 text-slate-700"],
+  ["thán từ", "bg-orange-100 text-orange-700"],
+];
+
+function PosBadge({ pos }: { pos: string }) {
+  const key = pos.toLowerCase();
+  const color =
+    POS_COLOR.find(([k]) => key.includes(k))?.[1] ??
+    "bg-secondary text-muted-foreground";
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+        color
+      )}
+    >
+      {pos}
+    </span>
   );
 }

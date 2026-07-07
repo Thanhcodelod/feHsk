@@ -249,6 +249,13 @@ export type VocabSource =
   | "TOCFL"
   | "THEME";
 
+/** An example sentence for a vocabulary word. */
+export interface VocabExample {
+  zh: string; // câu chữ Hán
+  pinyin: string; // phiên âm
+  vi: string; // dịch nghĩa tiếng Việt
+}
+
 /** A vocabulary entry for the flashcard / review feature. */
 export interface VocabWord {
   id: string;
@@ -260,6 +267,8 @@ export interface VocabWord {
   pinyin: string;
   vi: string; // Vietnamese meaning
   topic?: string;
+  pos?: string; // loại từ (danh từ, động từ, tính từ…)
+  examples?: VocabExample[]; // câu ví dụ minh hoạ
 }
 
 /** A sentence pattern (mẫu câu) organised by topic. */

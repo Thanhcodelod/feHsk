@@ -1,7 +1,13 @@
-import { FunctionLevelPicker } from "@/components/practice/FunctionLevelPicker";
+import { FunctionLessonLanding } from "@/components/practice/FunctionLessonLanding";
+import { FUNCTION_EXERCISES } from "@/lib/function-exercises";
 
 export const metadata = { title: "Sắp xếp câu · HSK Master" };
 
-export default function Page() {
-  return <FunctionLevelPicker type="WRITE_REORDER_SENTENCE" basePath="/sap-xep-cau" />;
+export default function SapXepCauPage() {
+  return (
+    <FunctionLessonLanding
+      config={FUNCTION_EXERCISES["sap-xep-cau"]}
+      levelParam="1"
+    />
+  );
 }

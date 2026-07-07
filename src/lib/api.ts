@@ -156,6 +156,35 @@ export async function apiSubmit(
   return asJson<SubmissionResult>(res);
 }
 
+// Per-account question-lesson progress (server-backed when logged in).
+export interface QuestionProgressDTO {
+  questionId: string;
+  attempts: number;
+  correct: boolean;
+  saved: boolean;
+}
+
+export async function apiGetQuestionProgress(): Promise<QuestionProgressDTO[]> {
+  const res = await fetch(`/api/question-progress`, {
+    headers: authHeaders(),
+    cache: "no-store",
+  });
+  const data = await asJson<{ states: QuestionProgressDTO[] }>(res);
+  return data.states;
+}
+
+export async function apiQuestionSave(
+  questionId: string,
+  saved: boolean
+): Promise<QuestionProgressDTO> {
+  const res = await fetch(`/api/questions/save`, {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ questionId, saved }),
+  });
+  return asJson<QuestionProgressDTO>(res);
+}
+
 // ---- Auth ------------------------------------------------------------------
 
 export async function apiRegister(input: {

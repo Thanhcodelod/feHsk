@@ -1,7 +1,13 @@
-import { FunctionLevelPicker } from "@/components/practice/FunctionLevelPicker";
+import { FunctionLessonLanding } from "@/components/practice/FunctionLessonLanding";
+import { FUNCTION_EXERCISES } from "@/lib/function-exercises";
 
 export const metadata = { title: "Điền từ · HSK Master" };
 
 export default function Page() {
-  return <FunctionLevelPicker type="READ_FILL_BLANK" basePath="/dien-tu" />;
+  return (
+    <FunctionLessonLanding
+      config={FUNCTION_EXERCISES["dien-tu"]}
+      levelParam="1"
+    />
+  );
 }

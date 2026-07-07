@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
-import { PracticeSession } from "@/components/practice/PracticeSession";
-import { HSK_LEVELS, type HSKLevel } from "@/lib/types";
+import { FunctionLessonLanding } from "@/components/practice/FunctionLessonLanding";
+import { FUNCTION_EXERCISES } from "@/lib/function-exercises";
+
+export const metadata = { title: "Hỏi đáp · HSK Master" };
 
 export default async function Page({
   params,
@@ -8,14 +9,10 @@ export default async function Page({
   params: Promise<{ level: string }>;
 }) {
   const { level } = await params;
-  if (!HSK_LEVELS.includes(level as HSKLevel)) notFound();
   return (
-    <PracticeSession
-      level={level as HSKLevel}
-      category="LISTENING"
-      type="LISTEN_CONVERSATION_QA"
-      exitHref="/hoi-dap"
-      exitLabel="Chọn cấp độ"
+    <FunctionLessonLanding
+      config={FUNCTION_EXERCISES["hoi-dap"]}
+      levelParam={level}
     />
   );
 }

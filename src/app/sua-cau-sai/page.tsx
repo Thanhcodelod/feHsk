@@ -1,7 +1,13 @@
-import { FunctionLevelPicker } from "@/components/practice/FunctionLevelPicker";
+import { FunctionLessonLanding } from "@/components/practice/FunctionLessonLanding";
+import { FUNCTION_EXERCISES } from "@/lib/function-exercises";
 
 export const metadata = { title: "Sửa câu sai · HSK Master" };
 
 export default function Page() {
-  return <FunctionLevelPicker type="WRITE_CORRECT_ERROR" basePath="/sua-cau-sai" />;
+  return (
+    <FunctionLessonLanding
+      config={FUNCTION_EXERCISES["sua-cau-sai"]}
+      levelParam="1"
+    />
+  );
 }

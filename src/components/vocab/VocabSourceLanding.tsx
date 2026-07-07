@@ -67,6 +67,12 @@ export function VocabSourceLanding({
   }
 
   const firstGroup = data.groups[0]?.group;
+  const totalWords = data.groups.reduce((a, g) => a + g.count, 0);
+  const totalLessons = data.groups.reduce(
+    (a, g) => a + Math.ceil(g.count / LESSON_SIZE),
+    0
+  );
+  const totalGroups = data.groups.length;
 
   return (
     <div className="space-y-8">
@@ -74,7 +80,10 @@ export function VocabSourceLanding({
       <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 p-6 text-white sm:p-8">
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <div>
-            <h1 className="text-3xl font-bold">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/30">
+              <span>{meta.emoji}</span> {meta.label} · Lesson
+            </span>
+            <h1 className="mt-3 text-3xl font-bold">
               {meta.label.replace(/^Từ vựng /, "Từ Vựng ")}
             </h1>
             <p className="mt-3 max-w-xl text-slate-300">
@@ -91,19 +100,28 @@ export function VocabSourceLanding({
               </Link>
             ) : null}
           </div>
-          <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
-            <div className="space-y-2.5">
-              {FEATURES.map((f) => {
-                const Icon = f.icon;
-                return (
-                  <div key={f.text} className="flex items-center gap-3 text-sm">
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-white/10">
-                      <Icon className="size-4 text-primary" />
-                    </span>
-                    <span className="text-slate-200">{f.text}</span>
-                  </div>
-                );
-              })}
+          <div className="space-y-3">
+            {/* Aggregate stats (hihsk-style) */}
+            <div className="grid grid-cols-3 divide-x divide-white/10 rounded-xl bg-white/5 p-4 text-center ring-1 ring-white/10">
+              <HeroStat value={totalGroups} label="BỘ HỌC" />
+              <HeroStat value={totalLessons} label="BÀI HỌC" />
+              <HeroStat value={totalWords} label="TỪ VỰNG" />
+            </div>
+            {/* Feature list */}
+            <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
+              <div className="space-y-2.5">
+                {FEATURES.map((f) => {
+                  const Icon = f.icon;
+                  return (
+                    <div key={f.text} className="flex items-center gap-3 text-sm">
+                      <span className="flex size-8 items-center justify-center rounded-lg bg-white/10">
+                        <Icon className="size-4 text-primary" />
+                      </span>
+                      <span className="text-slate-200">{f.text}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -154,6 +172,19 @@ export function VocabSourceLanding({
           })}
         </div>
       </section>
+    </div>
+  );
+}
+
+function HeroStat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="px-1">
+      <p className="text-2xl font-bold leading-none">
+        {value.toLocaleString("vi-VN")}
+      </p>
+      <p className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-white/70">
+        {label}
+      </p>
     </div>
   );
 }

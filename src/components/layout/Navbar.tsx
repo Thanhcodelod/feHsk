@@ -129,8 +129,6 @@ const END_LINKS = [
   { href: "/bo-thu", label: "Bộ thủ" },
   { href: "/thi-thu", label: "Luyện thi" },
   { href: "/thi-thu", label: "Luyện thi HSK 3.0" },
-  { href: "/thi-thu", label: "Luyện thi mới" },
-  { href: "/luyen-dich", label: "Dịch" },
 ];
 
 export function Navbar() {

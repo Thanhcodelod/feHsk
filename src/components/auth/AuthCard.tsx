@@ -56,7 +56,7 @@ export function AuthCard() {
   return (
     <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-2xl border shadow-elevated md:grid-cols-2">
       {/* Branded panel */}
-      <div className="relative hidden flex-col justify-between bg-gradient-to-br from-primary via-rose-700 to-slate-900 p-8 text-white md:flex">
+      <div className="relative hidden flex-col justify-between bg-gradient-to-br from-primary via-sky-700 to-slate-900 p-8 text-white md:flex">
         <div>
           <span className="hanzi text-7xl font-semibold leading-none opacity-90">
             学

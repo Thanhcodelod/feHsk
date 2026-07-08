@@ -6,6 +6,7 @@ const config: Config = {
     "./src/pages/**/*.{ts,tsx}",
     "./src/components/**/*.{ts,tsx}",
     "./src/app/**/*.{ts,tsx}",
+    "./src/lib/**/*.{ts,tsx}",
   ],
   theme: {
     container: {
@@ -72,11 +73,11 @@ const config: Config = {
         "2xl": "calc(var(--radius) + 10px)",
       },
       boxShadow: {
-        soft: "0 1px 2px 0 rgb(20 14 8 / 0.04), 0 1px 3px 0 rgb(20 14 8 / 0.06)",
-        card: "0 1px 3px 0 rgb(20 14 8 / 0.05), 0 6px 16px -4px rgb(20 14 8 / 0.08)",
+        soft: "0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)",
+        card: "0 1px 3px 0 rgb(15 23 42 / 0.04), 0 6px 16px -4px rgb(15 23 42 / 0.07)",
         elevated:
-          "0 4px 8px -2px rgb(20 14 8 / 0.06), 0 14px 28px -8px rgb(20 14 8 / 0.12)",
-        pop: "0 10px 20px -6px rgb(20 14 8 / 0.10), 0 24px 48px -12px rgb(20 14 8 / 0.16)",
+          "0 4px 8px -2px rgb(15 23 42 / 0.05), 0 14px 28px -8px rgb(15 23 42 / 0.10)",
+        pop: "0 10px 20px -6px rgb(15 23 42 / 0.08), 0 24px 48px -12px rgb(15 23 42 / 0.14)",
       },
       keyframes: {
         "accordion-down": {

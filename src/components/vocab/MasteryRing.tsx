@@ -31,19 +31,34 @@ export function MasteryRing({
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const frac = clamped / MASTER_LEVEL;
-  const arc = c * frac;
   const emoji = PLANT_BY_LEVEL[clamped] ?? PLANT_BY_LEVEL[0];
   const mastered = clamped >= MASTER_LEVEL;
 
+  // Pop the whole ring when the level climbs.
+  const prev = React.useRef(clamped);
+  const [pop, setPop] = React.useState(false);
+  React.useEffect(() => {
+    if (clamped > prev.current) {
+      setPop(true);
+      const t = setTimeout(() => setPop(false), 560);
+      prev.current = clamped;
+      return () => clearTimeout(t);
+    }
+    prev.current = clamped;
+  }, [clamped]);
+
   return (
     <div
-      className={cn("relative inline-flex items-center justify-center", className)}
+      className={cn(
+        "relative inline-flex items-center justify-center",
+        pop && "animate-ring-pop",
+        className
+      )}
       style={{ width: size, height: size }}
       title={`${levelName(clamped)} (${clamped}/${MASTER_LEVEL})`}
       aria-label={`Mức nhớ: ${levelName(clamped)}`}
     >
       <svg width={size} height={size} className="-rotate-90">
-        {/* track */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -53,7 +68,6 @@ export function MasteryRing({
           className="stroke-secondary"
           strokeDasharray={clamped === 0 ? "4 5" : undefined}
         />
-        {/* progress */}
         {clamped > 0 ? (
           <circle
             cx={size / 2}
@@ -62,13 +76,18 @@ export function MasteryRing({
             fill="none"
             strokeWidth={stroke}
             strokeLinecap="round"
-            className={cn(mastered ? "stroke-amber-400" : "stroke-success")}
-            strokeDasharray={`${arc} ${c - arc}`}
+            className={cn(
+              "transition-[stroke-dashoffset] duration-500 ease-out",
+              mastered ? "stroke-amber-400" : "stroke-success"
+            )}
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - frac)}
           />
         ) : null}
       </svg>
       <span
-        className="absolute leading-none"
+        key={clamped}
+        className="absolute leading-none animate-pop-in"
         style={{ fontSize: size * 0.42 }}
       >
         {emoji}

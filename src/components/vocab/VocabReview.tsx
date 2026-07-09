@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   Cloud,
   HardDrive,
+  Droplets,
+  ChevronLeft,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VocabStudy } from "@/components/vocab/VocabStudy";
+import { SmartLearn } from "@/components/vocab/SmartLearn";
 import { useAuth } from "@/lib/auth";
 import { speak } from "@/lib/speech";
 import {
@@ -49,7 +52,9 @@ export function VocabReview({
   const [flipped, setFlipped] = React.useState<Set<string>>(new Set());
   const [srs, setSrs] = React.useState<SrsMap>({});
   const [stats, setStats] = React.useState<VocabStats | null>(null);
-  const [study, setStudy] = React.useState<null | "flashcard" | "quiz">(null);
+  const [study, setStudy] = React.useState<
+    null | "review" | "flashcard" | "quiz"
+  >(null);
 
   const refreshSrs = React.useCallback(async () => {
     const map = await loadSrs(useServer).catch(() => ({}) as SrsMap);
@@ -70,6 +75,13 @@ export function VocabReview({
     return [...t].sort();
   }, [words]);
 
+  // Words already studied (have SRS state) but not yet fully mastered — the set
+  // the "Luyện tập" review session drills.
+  const reviewWords = React.useMemo(
+    () => words.filter((w) => srs[w.id] && !isMastered(srs[w.id])),
+    [words, srs]
+  );
+
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     return words.filter((w) => {
@@ -85,27 +97,29 @@ export function VocabReview({
   }, [words, query, topic]);
 
   if (study) {
+    const back = () => {
+      setStudy(null);
+      void refreshSrs();
+    };
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          {study === "flashcard" ? (
-            <Layers className="size-5 text-primary" />
-          ) : (
-            <Brain className="size-5 text-primary" />
-          )}
-          <h1 className="text-xl font-bold">
-            {study === "flashcard" ? "Ôn tập thẻ ghi nhớ" : "Kiểm tra trí nhớ"} ·{" "}
-            {title}
-          </h1>
-        </div>
-        <VocabStudy
-          words={words}
-          mode={study}
-          onClose={() => {
-            setStudy(null);
-            void refreshSrs();
-          }}
-        />
+        <button
+          type="button"
+          onClick={back}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="size-4" /> Quay lại · {title}
+        </button>
+        {study === "review" ? (
+          <SmartLearn
+            words={reviewWords}
+            mode="review"
+            distractorPool={words}
+            onClose={back}
+          />
+        ) : (
+          <VocabStudy words={words} mode={study} onClose={back} />
+        )}
       </div>
     );
   }
@@ -146,11 +160,26 @@ export function VocabReview({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button size="lg" onClick={() => setStudy("flashcard")}>
-          <Layers /> Ôn tập (thẻ)
+        <Button
+          size="lg"
+          variant="accent"
+          disabled={reviewWords.length === 0}
+          onClick={() => setStudy("review")}
+          className="transition-transform hover:scale-[1.02]"
+          title={
+            reviewWords.length === 0
+              ? "Chưa có từ đang học để ôn — hãy Học từ mới trước"
+              : undefined
+          }
+        >
+          <Droplets /> Luyện tập ôn từ
+          {reviewWords.length ? ` (${reviewWords.length})` : ""}
         </Button>
-        <Button size="lg" variant="accent" onClick={() => setStudy("quiz")}>
-          <Brain /> Kiểm tra trí nhớ
+        <Button size="lg" variant="outline" onClick={() => setStudy("flashcard")}>
+          <Layers /> Ôn thẻ ghi nhớ
+        </Button>
+        <Button size="lg" variant="outline" onClick={() => setStudy("quiz")}>
+          <Brain /> Kiểm tra
         </Button>
         {!useServer && stats && stats.mastered + stats.learning > 0 ? (
           <Button

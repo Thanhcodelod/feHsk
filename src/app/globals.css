@@ -85,3 +85,66 @@
 .recording-pulse {
   animation: pulse-ring 1.5s infinite;
 }
+
+/* ── Học từ mới / luyện tập animations ─────────────────────────────────── */
+@keyframes q-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.85); opacity: 0.4; }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+@keyframes ring-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .animate-q-in { animation: q-in 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+  .animate-pop-in { animation: pop-in 0.32s ease-out both; }
+  .animate-shake { animation: shake 0.45s ease-in-out both; }
+  .animate-ring-pop { animation: ring-pop 0.55s ease-out; }
+  .animate-rise-in { animation: rise-in 0.28s ease-out both; }
+}
+
+/* 3D flashcard flip */
+.flip-scene { perspective: 1400px; }
+.flip-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.flip-card.is-flipped { transform: rotateY(180deg); }
+.flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .flip-card { transition: none; }
+}
+
+/* Soft gradient surface for the practice card */
+.practice-surface {
+  background:
+    radial-gradient(120% 120% at 50% 0%, hsl(var(--primary) / 0.06), transparent 60%),
+    hsl(var(--card));
+}

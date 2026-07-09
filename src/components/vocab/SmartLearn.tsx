@@ -26,9 +26,11 @@ import { submitReview } from "@/lib/vocab-srs";
 import { normalizeChinese } from "@/lib/similarity";
 import { MasteryRing, levelName } from "@/components/vocab/MasteryRing";
 import {
-  applyResult,
+  applyResultAt,
+  activatePending,
+  pickNext,
   buildLearnQueue,
-  exerciseForLevel,
+  chooseType,
   nextLevelOnAnswer,
   qualityForResult,
   qualityForFlashcard,
@@ -81,9 +83,41 @@ function pickDistinct<T>(pool: T[], n: number, taken: T[]): T[] {
   return out;
 }
 
-function buildExercise(card: LearnCard, pool: VocabWord[]): Exercise {
+const normPinyin = (p: string) => p.toLowerCase().replace(/\s+/g, "");
+
+/**
+ * `n` distractor values, preferring the `primary` pool and only falling back to
+ * `fallback` when the primary is too small. Used to keep audio exercises
+ * answerable: distractors are drawn from words that SOUND different from the
+ * target (homophones like 他/她 "tā" would be indistinguishable by ear).
+ */
+function distractorStrings(
+  primary: string[],
+  fallback: string[],
+  answer: string,
+  n: number
+): string[] {
+  const chosen = pickDistinct(primary, n, [answer]);
+  if (chosen.length >= n) return chosen;
+  return [...chosen, ...pickDistinct(fallback, n - chosen.length, [answer, ...chosen])];
+}
+
+/** `n` distractor WORDS that sound different from `w` (topped up if too few). */
+function distinctSoundWords(pool: VocabWord[], w: VocabWord, n: number): VocabWord[] {
+  const wp = normPinyin(w.pinyin);
+  const diff = pool.filter((x) => x.id !== w.id && normPinyin(x.pinyin) !== wp);
+  const chosen = pickDistinct(diff, n, []);
+  if (chosen.length >= n) return chosen;
+  const rest = pool.filter((x) => x.id !== w.id && !chosen.includes(x));
+  return [...chosen, ...pickDistinct(rest, n - chosen.length, [])];
+}
+
+function buildExercise(
+  card: LearnCard,
+  pool: VocabWord[],
+  type: ExerciseType
+): Exercise {
   const w = card.word;
-  const type = exerciseForLevel(card.level, card.seen);
   switch (type) {
     case "flashcard":
       return { type: "flashcard", word: w };
@@ -107,43 +141,38 @@ function buildExercise(card: LearnCard, pool: VocabWord[]): Exercise {
     }
     case "choose-meaning":
     case "listen-meaning": {
-      const viPool = pool.map((x) => x.vi);
-      const options = shuffleClient([
-        w.vi,
-        ...pickDistinct(viPool, 3, [w.vi]),
-      ]);
-      return {
-        type,
-        word: w,
-        options,
-        answer: w.vi,
-        optionsHanzi: false,
-        listen: type === "listen-meaning",
-      };
+      const listen = type === "listen-meaning";
+      // For the listening variant the meaning options must map to distinct
+      // sounds, so distractors come from words that don't share the pinyin.
+      const primary = (
+        listen
+          ? pool.filter((x) => normPinyin(x.pinyin) !== normPinyin(w.pinyin))
+          : pool
+      ).map((x) => x.vi);
+      const distractors = distractorStrings(primary, pool.map((x) => x.vi), w.vi, 3);
+      const options = shuffleClient([w.vi, ...distractors]);
+      return { type, word: w, options, answer: w.vi, optionsHanzi: false, listen };
     }
     case "choose-word":
     case "listen-word": {
-      const hanziPool = pool.map((x) => x.hanzi);
-      const options = shuffleClient([
+      const listen = type === "listen-word";
+      const primary = (
+        listen
+          ? pool.filter((x) => normPinyin(x.pinyin) !== normPinyin(w.pinyin))
+          : pool
+      ).map((x) => x.hanzi);
+      const distractors = distractorStrings(
+        primary,
+        pool.map((x) => x.hanzi),
         w.hanzi,
-        ...pickDistinct(hanziPool, 3, [w.hanzi]),
-      ]);
-      return {
-        type,
-        word: w,
-        options,
-        answer: w.hanzi,
-        optionsHanzi: true,
-        listen: type === "listen-word",
-      };
+        3
+      );
+      const options = shuffleClient([w.hanzi, ...distractors]);
+      return { type, word: w, options, answer: w.hanzi, optionsHanzi: true, listen };
     }
     case "meaning-audio": {
-      const others = pickDistinct(
-        pool.filter((x) => x.id !== w.id),
-        3,
-        []
-      );
-      const choices = shuffleClient([w, ...others]);
+      // Audio choices must sound different, else the answer isn't identifiable.
+      const choices = shuffleClient([w, ...distinctSoundWords(pool, w, 3)]);
       return { type: "meaning-audio", word: w, choices, answerId: w.id };
     }
   }
@@ -156,14 +185,25 @@ const KEYCAP =
 export function SmartLearn({
   words,
   onClose,
+  mode = "learn",
+  distractorPool,
 }: {
   words: VocabWord[];
   onClose: () => void;
+  /** "learn" introduces words from scratch; "review" skips the flashcard intro
+   *  for words already studied but not fully mastered. */
+  mode?: "learn" | "review";
+  /** Wider word set to draw MCQ distractors from (keeps questions non-trivial
+   *  when the studied set is small, e.g. a short review). Defaults to `words`. */
+  distractorPool?: VocabWord[];
 }) {
   const { user } = useAuth();
   const useServer = !!user;
 
-  const [queue, setQueue] = React.useState<LearnCard[]>([]);
+  const [cards, setCards] = React.useState<LearnCard[]>([]);
+  const [currentIdx, setCurrentIdx] = React.useState(0);
+  const [clock, setClock] = React.useState(0);
+  const prevTypeRef = React.useRef<ExerciseType | null>(null);
   const [pool, setPool] = React.useState<VocabWord[]>([]);
   const [total, setTotal] = React.useState(0);
   const [masteredCount, setMasteredCount] = React.useState(0);
@@ -185,15 +225,26 @@ export function SmartLearn({
   const start = React.useCallback(() => {
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
     const batch = shuffleClient(words).slice(0, SESSION_SIZE);
-    setPool(batch);
-    setQueue(buildLearnQueue(batch));
+    // Review mode skips the level-0 flashcard intro (words are already known).
+    const initial = buildLearnQueue(batch, mode === "review" ? 1 : 0);
+    prevTypeRef.current = null;
+    // Draw distractors from the wider pool when provided, but ensure the batch
+    // words are included so the correct answer is always among the pool.
+    const pool =
+      distractorPool && distractorPool.length > batch.length
+        ? distractorPool
+        : batch;
+    setPool(pool);
+    setCards(initial);
+    setCurrentIdx(pickNext(initial, null));
+    setClock(0);
     setTotal(batch.length);
     setMasteredCount(0);
     setDone(false);
     setStep(0);
     resetAnswer();
     setLoading(false);
-  }, [words]);
+  }, [words, mode, distractorPool]);
 
   React.useEffect(() => {
     start();
@@ -202,9 +253,14 @@ export function SmartLearn({
     };
   }, [start]);
 
-  const current = queue[0];
+  const current = currentIdx >= 0 ? cards[currentIdx] : undefined;
   const exercise = React.useMemo(
-    () => (current ? buildExercise(current, pool) : null),
+    () => {
+      if (!current) return null;
+      // Pick a type that differs from the previous question's type.
+      const type = chooseType(current.level, current.seen, prevTypeRef.current);
+      return buildExercise(current, pool, type);
+    },
     // rebuild for each new card view (step) — pool is stable per session
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [step, current?.word.id, loading]
@@ -232,18 +288,31 @@ export function SmartLearn({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, loading]);
 
-  // Move the queue forward based on the computed new level for the front card.
+  // Apply the answer to the current card and pick the next card to show. The
+  // next pick avoids repeating the same word / exercise type back-to-back.
   const commit = (newLevel: number) => {
     if (advanceTimer.current) {
       clearTimeout(advanceTimer.current);
       advanceTimer.current = null;
     }
-    const { queue: next, mastered } = applyResult(queue, newLevel);
-    if (mastered) setMasteredCount((c) => c + 1);
+    if (!current) return;
+    const lastWordId = current.word.id;
+    prevTypeRef.current = exercise?.type ?? null; // so the next question differs
+    const applied = applyResultAt(cards, currentIdx, newLevel, clock);
+    if (applied.mastered) setMasteredCount((c) => c + 1);
+    const nextClock = clock + 1;
+    // Introduce more new words as earlier ones progress (bounded early-stage set).
+    const next = activatePending(applied.cards, nextClock);
+    setClock(nextClock);
     resetAnswer();
     setStep((s) => s + 1);
-    if (next.length === 0) setDone(true);
-    setQueue(next);
+    setCards(next);
+    if (next.length === 0) {
+      setDone(true);
+      setCurrentIdx(-1);
+    } else {
+      setCurrentIdx(pickNext(next, lastWordId, prevTypeRef.current));
+    }
   };
 
   const scheduleAdvance = (newLevel: number, delay: number) => {
@@ -314,6 +383,9 @@ export function SmartLearn({
   React.useEffect(() => {
     if (loading || done || !exercise) return;
     const onKey = (e: KeyboardEvent) => {
+      // Don't hijack keys (esp. Enter) while an IME composition is in progress —
+      // e.g. confirming a Chinese/pinyin candidate in the typing exercise.
+      if (e.isComposing || e.keyCode === 229) return;
       const t = exercise.type;
 
       // acknowledge a shown (wrong or resolved) answer → next
@@ -373,7 +445,7 @@ export function SmartLearn({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exercise, answered, flipped, input, loading, done, queue]);
+  }, [exercise, answered, flipped, input, loading, done, cards, currentIdx, clock]);
 
   // ---- render states --------------------------------------------------------
   if (loading) {
@@ -385,10 +457,17 @@ export function SmartLearn({
   }
   if (total === 0) {
     return (
-      <Card className="mx-auto max-w-lg text-center">
+      <Card className="mx-auto max-w-lg animate-rise-in text-center">
         <CardContent className="p-8">
-          <Trophy className="mx-auto size-10 text-success" />
-          <h3 className="mt-3 text-xl font-bold">Không có từ để học</h3>
+          <div className="text-5xl">🌱</div>
+          <h3 className="mt-3 text-xl font-bold">
+            {mode === "review" ? "Chưa có từ cần ôn" : "Không có từ để học"}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {mode === "review"
+              ? "Bạn chưa có từ nào đang học. Hãy “Học từ mới” trước để gieo hạt nhé!"
+              : "Danh sách từ trống."}
+          </p>
           <Button className="mt-4" onClick={onClose}>
             Đóng
           </Button>
@@ -398,10 +477,12 @@ export function SmartLearn({
   }
   if (done) {
     return (
-      <Card className="mx-auto max-w-lg text-center">
+      <Card className="mx-auto max-w-lg animate-rise-in text-center">
         <CardContent className="p-8">
-          <div className="text-5xl">🌸🌻🌷</div>
-          <h3 className="mt-3 text-2xl font-bold">Hoàn thành! 🎉</h3>
+          <div className="animate-pop-in text-5xl">🌸🌻🌷</div>
+          <h3 className="mt-3 text-2xl font-bold">
+            {mode === "review" ? "Ôn tập xong! 🎉" : "Hoàn thành! 🎉"}
+          </h3>
           <p className="mt-1 text-muted-foreground">
             Bạn đã đưa tất cả {total} từ lên mức{" "}
             <span className="font-semibold text-amber-500">Thông thạo</span>.
@@ -432,7 +513,7 @@ export function SmartLearn({
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      {/* Header: title + overall mastery progress + this word's ring */}
+      {/* Header: exercise title + lesson progress bar + THIS WORD's mastery ring */}
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <div className="mb-1 flex items-center justify-between">
@@ -440,18 +521,26 @@ export function SmartLearn({
               {EXERCISE_TITLES[exercise.type]}
             </h2>
             <span className="text-xs text-muted-foreground">
-              Đã thuộc {masteredCount}/{total}
+              Bài học · đã thuộc {masteredCount}/{total} từ
             </span>
           </div>
           <Progress value={pct} className="h-2" />
         </div>
-        <MasteryRing level={current.level} size={52} />
+        {/* Per-word memory level (of the word being tested right now). */}
+        <div className="flex flex-col items-center">
+          <MasteryRing level={current.level} size={52} />
+          <span className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+            {levelName(current.level)}
+          </span>
+        </div>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <X className="size-4" />
         </Button>
       </div>
 
-      {renderExercise(exercise)}
+      <div key={step} className="animate-q-in">
+        {renderExercise(exercise)}
+      </div>
 
       <p className="text-center text-xs text-muted-foreground">
         Mỗi từ được ôn qua nhiều dạng bài; trả lời đúng để cây lớn dần tới{" "}
@@ -493,55 +582,81 @@ export function SmartLearn({
   }
 
   function renderFlashcard(w: VocabWord) {
+    const faceBase =
+      "practice-surface flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-2xl border p-8 text-center shadow-elevated";
     return (
-      <Card>
-        <CardContent className="flex min-h-[300px] flex-col items-center justify-center gap-4 p-8 text-center">
-          <div className="flex items-center gap-2">
-            <span className="hanzi text-6xl font-semibold">{w.hanzi}</span>
-            <AudioButton text={w.hanzi} />
-          </div>
-          <p className="text-lg text-primary">{w.pinyin}</p>
-          {flipped ? (
-            <div className="space-y-3">
-              {w.pos ? (
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs italic text-muted-foreground">
-                  {w.pos}
-                </span>
-              ) : null}
-              <p className="text-xl">{w.vi}</p>
-              <div className="flex flex-wrap justify-center gap-2 pt-2">
-                <Button variant="success" onClick={() => rateFlashcard("known")}>
-                  <span className={KEYCAP}>1</span> Thông thạo
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => rateFlashcard("partial")}
-                >
-                  <span className={KEYCAP}>3</span> Nhớ tạm
-                </Button>
-                <Button onClick={() => rateFlashcard("unknown")}>
-                  <span className={KEYCAP}>↵</span> Chưa biết
-                </Button>
-              </div>
+      <div className="flip-scene">
+        <div className={cn("flip-card", flipped && "is-flipped")}>
+          {/* Front — hanzi + pinyin */}
+          <div className={cn("flip-face", faceBase, flipped && "pointer-events-none")}>
+            <span className="rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary">
+              Từ mới
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="hanzi text-6xl font-semibold">{w.hanzi}</span>
+              <AudioButton text={w.hanzi} />
             </div>
-          ) : (
+            <p className="text-lg text-primary">{w.pinyin}</p>
             <Button
               variant="outline"
               size="lg"
               onClick={() => setFlipped(true)}
-              className="text-success"
+              className="mt-2 gap-1.5 text-success transition-transform hover:scale-[1.03]"
             >
               <Keyboard className="size-4" /> Lật · Nhấn Space
             </Button>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+
+          {/* Back — meaning + self-rating */}
+          <div
+            className={cn(
+              "flip-face flip-face-back",
+              faceBase,
+              !flipped && "pointer-events-none"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span className="hanzi text-4xl font-semibold">{w.hanzi}</span>
+              <AudioButton text={w.hanzi} />
+            </div>
+            <p className="text-primary">{w.pinyin}</p>
+            {w.pos ? (
+              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs italic text-muted-foreground">
+                {w.pos}
+              </span>
+            ) : null}
+            <p className="text-xl font-medium">{w.vi}</p>
+            <div className="mt-1 flex flex-wrap justify-center gap-2">
+              <Button
+                variant="success"
+                onClick={() => rateFlashcard("known")}
+                className="gap-1.5 transition-transform hover:scale-[1.04]"
+              >
+                <span className={KEYCAP}>1</span> Thông thạo
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => rateFlashcard("partial")}
+                className="gap-1.5 transition-transform hover:scale-[1.04]"
+              >
+                <span className={KEYCAP}>3</span> Nhớ tạm
+              </Button>
+              <Button
+                onClick={() => rateFlashcard("unknown")}
+                className="gap-1.5 transition-transform hover:scale-[1.04]"
+              >
+                <span className={KEYCAP}>↵</span> Chưa biết
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
   function renderTrueFalse(ex: Extract<Exercise, { type: "truefalse" }>) {
     return (
-      <Card>
+      <Card className="practice-surface shadow-elevated">
         <CardContent className="flex min-h-[300px] flex-col items-center justify-center gap-5 p-8 text-center">
           <div>
             {ex.word.pos ? (
@@ -583,7 +698,7 @@ export function SmartLearn({
     >
   ) {
     return (
-      <Card>
+      <Card className="practice-surface shadow-elevated">
         <CardContent className="p-6">
           <div className="flex min-h-[110px] flex-col items-center justify-center gap-2 text-center">
             {ex.listen ? (
@@ -628,7 +743,7 @@ export function SmartLearn({
     ex: Extract<Exercise, { type: "meaning-audio" }>
   ) {
     return (
-      <Card>
+      <Card className="practice-surface shadow-elevated">
         <CardContent className="p-6">
           <div className="min-h-[70px] text-center">
             <p className="text-sm text-muted-foreground">Nghĩa</p>
@@ -687,7 +802,7 @@ export function SmartLearn({
     const revealPinyin = hint >= 1;
     const revealChar = hint >= 2;
     return (
-      <Card>
+      <Card className="practice-surface shadow-elevated">
         <CardContent className="p-6">
           <div className="min-h-[70px] text-center">
             {w.pos ? (
@@ -769,17 +884,22 @@ export function SmartLearn({
         disabled={disabled}
         onClick={onClick}
         className={cn(
-          "flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-colors disabled:opacity-100",
-          state === "idle" && "border-border hover:border-primary/50 hover:bg-secondary",
+          "flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all duration-150 disabled:opacity-100",
+          state === "idle" &&
+            "border-border hover:-translate-y-0.5 hover:border-primary/50 hover:bg-secondary hover:shadow-elevated active:translate-y-0",
           state === "selected" && "border-primary bg-primary/5",
-          state === "correct" && "border-success bg-success/10",
-          state === "wrong" && "border-destructive bg-destructive/10"
+          state === "correct" && "animate-pop-in border-success bg-success/10",
+          state === "wrong" && "animate-shake border-destructive bg-destructive/10"
         )}
       >
         <span className={KEYCAP}>{keycap}</span>
         <span className={cn("flex-1", hanzi && "hanzi text-xl")}>{children}</span>
-        {state === "correct" ? <Check className="size-5 text-success" /> : null}
-        {state === "wrong" ? <XIcon className="size-5 text-destructive" /> : null}
+        {state === "correct" ? (
+          <Check className="size-5 shrink-0 text-success" />
+        ) : null}
+        {state === "wrong" ? (
+          <XIcon className="size-5 shrink-0 text-destructive" />
+        ) : null}
       </button>
     );
   }
@@ -792,7 +912,7 @@ export function SmartLearn({
     detail: string;
   }) {
     return (
-      <div className="w-full space-y-2">
+      <div className="w-full animate-rise-in space-y-2">
         <p
           className={cn(
             "flex items-center justify-center gap-1.5 text-sm font-semibold",
@@ -801,7 +921,7 @@ export function SmartLearn({
         >
           {ok ? (
             <>
-              <Check className="size-4" /> Chính xác!
+              <Check className="size-4 animate-pop-in" /> Chính xác!
             </>
           ) : (
             <>

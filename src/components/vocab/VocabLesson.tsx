@@ -12,10 +12,12 @@ import {
   Play,
   Square,
   ChevronLeft,
+  Sprout,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { VocabStudy } from "@/components/vocab/VocabStudy";
+import { SmartLearn } from "@/components/vocab/SmartLearn";
 import { LessonSidebar } from "@/components/vocab/LessonSidebar";
 import { apiGetVocab, ApiError } from "@/lib/api";
 import { speak, stopSpeaking } from "@/lib/speech";
@@ -37,7 +39,9 @@ export function VocabLesson({
 }) {
   const [words, setWords] = React.useState<VocabWord[] | null>(null);
   const [error, setError] = React.useState("");
-  const [study, setStudy] = React.useState<null | "flashcard" | "quiz">(null);
+  const [study, setStudy] = React.useState<
+    null | "smart" | "flashcard" | "quiz"
+  >(null);
   const [playing, setPlaying] = React.useState(false);
   const playRef = React.useRef(false);
 
@@ -113,11 +117,18 @@ export function VocabLesson({
         >
           <ChevronLeft className="size-4" /> Quay lại bài {lesson}
         </button>
-        <VocabStudy
-          words={current.words}
-          mode={study}
-          onClose={() => setStudy(null)}
-        />
+        {study === "smart" ? (
+          <SmartLearn
+            words={current.words}
+            onClose={() => setStudy(null)}
+          />
+        ) : (
+          <VocabStudy
+            words={current.words}
+            mode={study}
+            onClose={() => setStudy(null)}
+          />
+        )}
       </div>
     );
   }
@@ -169,9 +180,16 @@ export function VocabLesson({
               <button
                 type="button"
                 onClick={() => setStudy("flashcard")}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium hover:bg-secondary"
               >
                 <Layers className="size-4" /> Flashcard
+              </button>
+              <button
+                type="button"
+                onClick={() => setStudy("smart")}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <Sprout className="size-4" /> Học từ mới
               </button>
             </div>
           </div>

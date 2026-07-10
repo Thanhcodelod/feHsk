@@ -148,3 +148,71 @@
     radial-gradient(120% 120% at 50% 0%, hsl(var(--primary) / 0.06), transparent 60%),
     hsl(var(--card));
 }
+
+/* ── Vở tập viết chữ Hán (handwriting practice sheet) ──────────────────── */
+/* Regular-script (Kaiti) is the correct model face for handwriting practice */
+.kaiti {
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", "楷体_GB2312",
+    "Noto Serif SC", "Songti SC", serif;
+}
+.writing-sheet {
+  --cell: 46px;
+}
+.writing-row {
+  display: flex;
+  flex-wrap: wrap;
+  width: calc(var(--cell) * var(--cols));
+}
+.writing-cell {
+  position: relative;
+  width: var(--cell);
+  height: var(--cell);
+  margin: -0.5px; /* collapse adjacent borders */
+}
+.writing-char {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cell) * 0.72);
+  line-height: 1;
+}
+
+@media print {
+  /* Print only the sheet, at A4 */
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #print-sheet,
+  #print-sheet * {
+    visibility: visible;
+  }
+  #print-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  .writing-sheet {
+    /* shrink cells so the row always fits the A4 print width */
+    --cell: min(17mm, calc(182mm / var(--cols)));
+  }
+  /* keep grid lines, red strokes and grey trace glyphs in print */
+  #print-sheet * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

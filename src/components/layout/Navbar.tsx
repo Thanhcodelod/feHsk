@@ -127,6 +127,7 @@ const TOP_LINKS = [
 const AFTER_LINKS = [{ href: "/hoi-dap", label: "Hội thoại" }];
 const END_LINKS = [
   { href: "/bo-thu", label: "Bộ thủ" },
+  { href: "/luyen-viet", label: "Luyện viết" },
   { href: "/thi-thu", label: "Luyện thi" },
   { href: "/thi-thu", label: "Luyện thi HSK 3.0" },
 ];

@@ -33,7 +33,7 @@ export default function RootLayout({
               <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 sm:px-6">
                 {children}
               </main>
-              <footer className="border-t bg-card/40">
+              <footer className="no-print border-t bg-card/40">
                 <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:px-6">
                   <p>© HSK Master · Luyện thi tiếng Trung cho người Việt</p>
                   <p className="hanzi text-base">加油 💪</p>

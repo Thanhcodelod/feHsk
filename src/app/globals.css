@@ -155,6 +155,9 @@
   font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", "楷体_GB2312",
     "Noto Serif SC", "Songti SC", serif;
 }
+.songti {
+  font-family: "Songti SC", "STSong", "SimSun", "宋体", "Noto Serif SC", serif;
+}
 .writing-sheet {
   --cell: 46px;
 }
@@ -180,7 +183,6 @@
 }
 
 @media print {
-  /* Print only the sheet, at A4 */
   @page {
     size: A4;
     margin: 12mm;
@@ -188,31 +190,41 @@
   body {
     background: #fff;
   }
-  body * {
-    visibility: hidden;
+  /* Hide app chrome; keep the sheet in normal flow so it paginates naturally
+     across as many A4 pages as needed (absolute positioning would force it onto
+     a single, shrunk page). */
+  .no-print {
+    display: none !important;
   }
-  #print-sheet,
-  #print-sheet * {
-    visibility: visible;
+  main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .lv-grid {
+    display: block !important;
+  }
+  .lv-preview {
+    overflow: visible !important;
   }
   #print-sheet {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+    width: auto !important;
+    margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
     box-shadow: none !important;
+    border-radius: 0 !important;
   }
-  .writing-sheet {
-    /* shrink cells so the row always fits the A4 print width */
-    --cell: min(17mm, calc(182mm / var(--cols)));
+  /* each character's rows stay together; new characters may start a new page */
+  .char-block {
+    break-inside: avoid;
   }
-  /* keep grid lines, red strokes and grey trace glyphs in print */
   #print-sheet * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .no-print {
-    display: none !important;
+  .writing-sheet {
+    /* cell size is fixed → content flows onto more pages, it does NOT shrink */
+    --cell: min(17mm, calc(182mm / var(--cols)));
   }
 }
